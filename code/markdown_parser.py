@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
-from hint import List, Generator
+
+from typing import Generator, List
 
 
 class MarkDownParser:

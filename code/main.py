@@ -1,9 +1,11 @@
-from pathlib import Path
-from s3 import S3
-from markdown_parser import MarkDownParser
 import concurrent.futures
+from pathlib import Path
 
-from hint import Generator, List
+from code.s3 import S3
+from code.markdown_parser import MarkDownParser
+from code.config import load_credentials
+from typing import Generator, List
+
 
 
 def create_maps(
@@ -29,13 +31,10 @@ def create_path_generator(
     return path_generator
 
 
-def run(
-    profile_name: str = "default",
-    bucket_name: str = "obs3dian",
-    output_path: Path = Path.cwd().joinpath("output"),
-):
+def run(credentials: dict):
+    output_path = Path(credentials["output_path"]).resolve()
     markdown_parser = MarkDownParser(output_path)
-    s3 = S3(profile_name, bucket_name)
+    s3 = S3(credentials["profile_name"], credentials["bucket_name"])
 
     def wrapper(markdown_file_path: Path) -> None:
         path_generator: Generator = create_path_generator(
@@ -51,16 +50,16 @@ def run(
     return wrapper
 
 
-def run_mutiple(root: Path = Path.cwd()) -> None:
-    run_ = run()
+def run_mutiple(credentials: dict, root: Path = Path.cwd()) -> None:
+    run_ = run(credentials)
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        for file_path in root.rglob("network/*.md"):  # 마크다운 파일 전체 적용
+        for file_path in root.rglob("*.md"):  # 마크다운 파일 전체 적용
             future = executor.submit(run_, file_path)
-            # print(future.result())
     return
 
 
 if __name__ == "__main__":
-    run_mutiple()
+    credentials = load_credentials()
+    run_mutiple(credentials, Path("test"))
     # run_ = run()
     # run_(Path("os/메모리.md"))
