@@ -9,6 +9,7 @@ class S3:
         self.session = boto3.Session(profile_name=profile_name)
         self.s3 = self.session.client("s3")
         self.bucket_name = bucket_name
+        return
 
     def create_bucket(self):
         bucket_name = self.bucket_name
@@ -26,6 +27,7 @@ class S3:
                 "RestrictPublicBuckets": False,
             },
         )
+        return
 
     def put_public_access_policy(self):
         policy = {
@@ -41,6 +43,7 @@ class S3:
             ],
         }
         self.s3.put_bucket_policy(Bucket=self.bucket_name, Policy=json.dumps(policy))
+        return
 
     def create_key(self, markdown_file_name: str, image_name: str):
         return f"{markdown_file_name}/{image_name}"
@@ -51,6 +54,7 @@ class S3:
             Body=file_path.open("rb"),
             Key=key,
         )
+        return
 
     def create_s3_url(self, object_key: str) -> str:
         region = self.session.region_name

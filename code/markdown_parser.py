@@ -4,18 +4,19 @@ from hint import List, Generator
 
 
 class MarkDownParser:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, output_path: Path) -> None:
+        self.output_path = output_path
 
-    def get_image_names(self, file_name: str) -> List[str]:
+    def get_image_names(self, file_path: Path) -> List[str]:
         image_names = []
         patt = r"!\[\[(.*?)\.(png|jpg|jpeg|gif)\]\]"  # group 1 = file_name, group 2 = foramt
 
-        with open(file_name) as f:
+        with file_path.open("r") as f:
             while line := f.readline():
-                if search_result := re.search(patt, line):
-                    image_name = f"{search_result.group(1)}.{search_result.group(2)}"
-                    image_names.append(image_name)
+                if search_results := re.findall(patt, line):
+                    for search_result in search_results:
+                        image_name = f"{search_result[0]}.{search_result[1]}"
+                        image_names.append(image_name)
 
         return image_names
 
@@ -31,9 +32,11 @@ class MarkDownParser:
             ):  # 파일 이름이 존재한다면
                 yield file_path
 
-    def replace_image_link(self, file_name: str, link_map: List[tuple[str, str]]):
-        with open(file_name, "r") as origin_file:  # 기존 파일
-            output_file = open(f"output/{file_name}", "w")  # 수정 파일
+    def replace_image_link(self, file_path: Path, link_map: List[tuple[str, str]]):
+        with open(file_path, "r") as origin_file:  # 기존 파일
+            output_file = open(
+                f"{self.output_path.joinpath(file_path.name)}", "w"
+            )  # 수정 파일
 
             while line := origin_file.readline():
                 for image_name, s3_url in link_map:
@@ -45,6 +48,7 @@ class MarkDownParser:
                         line = line.replace(
                             local_link.group(), s3_link
                         )  # s3 링크로 대체
+
                 output_file.write(line)  # 복사 진행
 
             output_file.close()
