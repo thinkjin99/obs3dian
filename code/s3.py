@@ -45,8 +45,8 @@ class S3:
         self.s3.put_bucket_policy(Bucket=self.bucket_name, Policy=json.dumps(policy))
         return
 
-    def create_key(self, markdown_file_name: str, image_name: str):
-        return f"{markdown_file_name}/{image_name}"
+    def create_key(self, markdown_file_name: pathlib.Path, image_name: pathlib.Path):
+        return f"{markdown_file_name.stem}/{image_name.name}"
 
     def put_image(self, key: str, file_path: pathlib.Path) -> None:
         self.s3.put_object(

@@ -1,15 +1,7 @@
 from pathlib import Path
-import json
 
 from code.s3 import S3
 
-
-def load_credentials() -> dict:
-    root = Path.cwd()
-    path = root.joinpath("credentials.json")
-    with path.open("r") as f:
-        credentials = json.load(f)
-    return credentials
 
 
 def set_bucket_config(s3: S3):
