@@ -78,15 +78,14 @@ class S3:
         )
         return s3_url
 
-    def put_image(self, file_path: Path, key: str) -> Path:
+    def put_image(self, file_path: Path, key: str) -> Path | None:
         try:
             self.s3.put_object(
                 Bucket=self.bucket_name,
                 Body=file_path.open("rb"),
                 Key=key,
             )
-            print(f"{file_path} is uploaded...")
+            return file_path
+
         except ClientError as e:
             print("Error Occured in uploading...\n", e)
-
-        return file_path
