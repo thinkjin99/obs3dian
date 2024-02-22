@@ -7,19 +7,24 @@ from urllib import parse
 
 class S3:
     def __init__(self, profile_name: str, bucket_name: str) -> None:
-        self.session = boto3.Session(profile_name=profile_name)
-        self.s3 = self.session.client("s3")
-        self.bucket_name = bucket_name
-        return
+        try:
+            self.session = boto3.Session(profile_name=profile_name)
+            self.s3 = self.session.client("s3")
+            self.bucket_name = bucket_name
+            return
 
-    def _check_bucket_exist(self):
+        except ClientError as e:
+            print("Can't Connect S3")
+            raise e
+
+    def _check_bucket_exist(self) -> bool:
         try:
             self.s3.head_bucket(Bucket=self.bucket_name)
             return True
 
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
-            assert error_code == "404"
+            assert error_code == "404", "Forbidden or Badrequest on S3"
             return False
 
     def create_bucket(self) -> bool:
@@ -44,11 +49,11 @@ class S3:
             )
             return True
 
-        except Exception as e:
+        except ClientError as e:
             print("Error occured in create bucket ", e)
             raise e
 
-    def put_public_access_policy(self):
+    def put_public_access_policy(self) -> None:
         policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -65,11 +70,10 @@ class S3:
             self.s3.put_bucket_policy(
                 Bucket=self.bucket_name, Policy=json.dumps(policy)
             )
-            return True
 
         except Exception as e:
-            print("Can't allow public acess to bucket check permission\n", e)
-            return False
+            print("Can't allow public acess to bucket check permission")
+            raise e
 
     def get_s3_url(self, key: str) -> str:
         region = self.session.region_name
