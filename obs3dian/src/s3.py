@@ -17,6 +17,19 @@ class S3:
             print("Can't Connect S3")
             raise e
 
+    def create_s3_key(self, markdown_file_name: str, image_name: str) -> str:
+        """
+        Create key by makrdown file name and image name key is used in S3
+
+        Args:
+            markdown_file_name (str): mark down file name
+            image_name (str): image file name in markdown
+
+        Returns:
+            str: S3 key
+        """
+        return f"{markdown_file_name}/{image_name}"
+
     def _check_bucket_exist(self) -> bool:
         try:
             self.s3.head_bucket(Bucket=self.bucket_name)
@@ -75,8 +88,9 @@ class S3:
             print("Can't allow public acess to bucket check permission")
             raise e
 
-    def get_s3_url(self, key: str) -> str:
+    def get_image_url(self, markdown_file_name: str, image_name: str) -> str:
         region = self.session.region_name
+        key = self.create_s3_key(markdown_file_name, image_name)
         s3_url = (
             f"https://{self.bucket_name}.s3.{region}.amazonaws.com/{parse.quote(key)}"
         )

@@ -111,17 +111,23 @@ def config():
     """
     Write config data to .json file
     """
-    profile_name = input("AWS Profile Name: ")
-    bucket_name = input("S3 bucket Name: ")
-    is_bucket_public = input("Is bucket public? (Y/N): ")
+    default_input = (
+        lambda description, default: input(f"{description} [{default}]: ").strip()
+        or default
+    )
+    profile_name = default_input("AWS Profile Name", "default")
+    bucket_name = default_input("S3 bucket Name", "obs3dian")
+    is_bucket_public = default_input("Is bucket public? (Y/N)", "Y")
     assert is_bucket_public in ["Y", "y", "N", "n"], "Invalid input press y/n"
-    output_path = input("Output Path: ")
+
+    output_path = default_input("Output Path", "./output")
+    output_path = _convert_path_absoulte(Path(output_path), False)
 
     json_data = {
         "profile_name": profile_name,
         "bucket_name": bucket_name,
         "is_bucket_public": is_bucket_public,
-        "output_folder_path": output_path,
+        "output_folder_path": output_path.name,
     }
 
     app_dir_path = Path(APP_DIR_PATH)  # create app setting folder
@@ -183,5 +189,5 @@ def run(user_input_path: Path):
     typer.echo(f"Images successfully uploaded to S3\n")
 
 
-if __name__ == "__main__":
-    app()
+# if __name__ == "__main__":
+# app()
