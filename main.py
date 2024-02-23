@@ -137,7 +137,7 @@ def config():
 def run(user_input_path: Path):
     """
     Run obs3dian main command, get image local file paths from md file.
-    After extracting image paths upload images to s3 and replace all file links in .md to S3 links.
+    After extracting image paths, it uploads images to s3 and replaces all file links in .md to S3 links.
     Output.md will be wrriten under output folder and it's image links would have been replaced to S3 links
 
     Args:
