@@ -74,8 +74,7 @@ def _render_animation(future: concurrent_futures.Future, echo_text: str) -> None
 @app.command()
 def apply():
     """
-    Apply settings from .json file
-    create bucket and create folder
+    Apply settings from config.json file
 
     Raises:
         e: invalid output path
@@ -89,10 +88,12 @@ def apply():
     print("Connected to AWS S3")
 
     if s3.create_bucket():
-        print("Bucket already exists...")
-
-    if configs["is_bucket_public"]:
+        print(f"Bucket {configs["bucket_name"]} created")
+        print("Bucket has public read access so anyone can see files in your bucket")
         s3.put_public_access_policy()
+    else:
+        print(f"Bucket {configs["bucket_name"]} is already exists")
+
 
     if not output_folder_path.exists():
         try:
@@ -117,9 +118,6 @@ def config():
     )
     profile_name = default_input("AWS Profile Name", "default")
     bucket_name = default_input("S3 bucket Name", "obs3dian")
-    is_bucket_public = default_input("Is bucket public? (Y/N)", "Y")
-    assert is_bucket_public in ["Y", "y", "N", "n"], "Invalid input press y/n"
-
     output_path = default_input("Output Path", "./output")
     output_path = _convert_path_absoulte(Path(output_path), False)
 
@@ -132,7 +130,6 @@ def config():
     json_data = {
         "profile_name": profile_name,
         "bucket_name": bucket_name,
-        "is_bucket_public": is_bucket_public,
         "output_folder_path": str(output_path),
         "image_folder_path": str(image_folder_path),
     }
@@ -156,7 +153,10 @@ def run(user_input_path: Path):
     Args:
         user_input_path (Path): user input path
     """
-
+    
+    apply() #run apply
+    typer.echo("") #new line
+    
     user_input_path = _convert_path_absoulte(user_input_path)
     configs: dict = _load_configs()
     output_folder_path = _convert_path_absoulte(Path(configs["output_folder_path"]))
