@@ -28,7 +28,7 @@ def _load_configs() -> dict:
         return configs
 
     except FileNotFoundError as e:
-        print("Config file is not founded. Run 'obs3dian config' to make config file")
+        print("Config file is not founded. Init your configuration")
         raise e
 
 
@@ -116,16 +116,28 @@ def config():
         lambda description, default: input(f"{description} [{default}]: ").strip()
         or default
     )
-    profile_name = default_input("AWS Profile Name", "default")
-    bucket_name = default_input("S3 bucket Name", "obs3dian")
-    output_path = default_input("Output Path", "./output")
-    output_path = _convert_path_absoulte(Path(output_path), False)
+    try:
+        configs: dict = _load_configs()
+        default_profile_name = configs["profile_name"]
+        default_bucket_name = configs["bucket_name"]
+        default_output_path = configs["output_folder_path"]
+        default_image_path = configs["image_folder_path"]
 
-    image_folder_path = default_input(
-        "Image Folder Path",
-        "./assets",
-    )
-    image_folder_path = _convert_path_absoulte(Path(image_folder_path), True)
+    except FileNotFoundError:
+        #First init default
+        default_profile_name = "your aws profile"
+        default_bucket_name = "your bucket name"
+        default_output_path = "your ouput path"
+        default_image_path =  "your image path"
+
+    profile_name = default_input("AWS Profile Name", default_profile_name)
+    bucket_name = default_input("S3 bucket Name", default_bucket_name)
+
+    output_path = Path(default_input("Output Path", default_output_path))
+    output_path = _convert_path_absoulte(output_path, False)
+
+    image_folder_path = Path(default_input("Image Folder Path", default_image_path))
+    image_folder_path = _convert_path_absoulte(image_folder_path, True)
 
     json_data = {
         "profile_name": profile_name,
