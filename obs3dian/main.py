@@ -117,6 +117,7 @@ def config():
         or default
     )
     try:
+        #Last config data
         configs: dict = _load_configs()
         default_profile_name = configs["profile_name"]
         default_bucket_name = configs["bucket_name"]
