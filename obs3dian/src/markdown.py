@@ -20,12 +20,13 @@ def _get_image_names(markdown_file_path: Path) -> List[str]:
     return image_names
 
 
-def generate_local_paths(markdown_file_path: Path) -> Generator[Path, None, None]:
-    current_path = Path.cwd()
+def generate_local_image_paths(
+    image_folder_path: Path, markdown_file_path: Path
+) -> Generator[Path, None, None]:
     image_names: list[str] = _get_image_names(markdown_file_path)
     image_name_set = set(image_names)
     suffixes = set((".png", ".jpg", ".jpeg", ".gif"))
-    for file_path in current_path.rglob("**/*"):  # 모든 디렉토리 탐사
+    for file_path in image_folder_path.rglob("**/*"):  # 모든 디렉토리 탐사
         if (
             file_path.suffix in suffixes and file_path.name in image_name_set
         ):  # 파일 이름이 존재한다면

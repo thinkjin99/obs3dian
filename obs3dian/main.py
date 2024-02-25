@@ -123,11 +123,18 @@ def config():
     output_path = default_input("Output Path", "./output")
     output_path = _convert_path_absoulte(Path(output_path), False)
 
+    image_folder_path = default_input(
+        "Image Folder Path",
+        "./assets",
+    )
+    image_folder_path = _convert_path_absoulte(Path(image_folder_path), True)
+
     json_data = {
         "profile_name": profile_name,
         "bucket_name": bucket_name,
         "is_bucket_public": is_bucket_public,
-        "output_folder_path": output_path.name,
+        "output_folder_path": str(output_path),
+        "image_folder_path": str(image_folder_path),
     }
 
     app_dir_path = Path(APP_DIR_PATH)  # create app setting folder
@@ -155,11 +162,13 @@ def run(user_input_path: Path):
     output_folder_path = _convert_path_absoulte(Path(configs["output_folder_path"]))
     s3 = S3(configs["profile_name"], configs["bucket_name"])
 
-    runner = create_obs3dian_runner(s3, output_folder_path)  # create main function
+    runner = create_obs3dian_runner(
+        s3, Path(configs["image_folder_path"]), output_folder_path
+    )  # create main function
 
     if user_input_path.is_dir():
         markdown_file_paths = [
-            file_path for file_path in user_input_path.rglob("**/*.md")
+            markdown_path for markdown_path in user_input_path.rglob("**/*.md")
         ]  # get all .md file under input dir
     else:
         markdown_file_paths = [user_input_path]
@@ -189,5 +198,5 @@ def run(user_input_path: Path):
     typer.echo(f"Images successfully uploaded to S3\n")
 
 
-# if __name__ == "__main__":
-# app()
+if __name__ == "__main__":
+    app()

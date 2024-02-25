@@ -1,7 +1,7 @@
 import concurrent.futures
 from pathlib import Path
 
-from src.markdown import generate_local_paths, write_md_file
+from src.markdown import generate_local_image_paths, write_md_file
 from src.s3 import S3
 
 from typing import Generator, Callable, List, Tuple
@@ -41,7 +41,9 @@ def put_images_in_md(
     return put_image_paths
 
 
-def create_obs3dian_runner(s3: S3, output_folder_path: Path) -> Callable:
+def create_obs3dian_runner(
+    s3: S3, image_folder_path: Path, output_folder_path: Path
+) -> Callable:
     """
     Create runner fucntion object
     S3 controller and ouput_folder_path would not change before config
@@ -61,7 +63,9 @@ def create_obs3dian_runner(s3: S3, output_folder_path: Path) -> Callable:
         Args:
             markdown_file_path (Path): mark down file path
         """
-        image_path_generator: Generator = generate_local_paths(markdown_file_path)
+        image_path_generator: Generator = generate_local_image_paths(
+            image_folder_path, markdown_file_path
+        )
         markdown_file_name = markdown_file_path.stem
 
         put_image_paths = put_images_in_md(s3, markdown_file_name, image_path_generator)
