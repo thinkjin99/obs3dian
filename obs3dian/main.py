@@ -208,7 +208,7 @@ def run(user_input_path: Path):
                 typer.echo("")  # new line
 
     typer.echo("\n")  # new line after progress bar
-    typer.echo(f"Images successfully uploaded to S3\n")
+    typer.echo(f"Total converts: {len(markdown_file_paths)} obs3dian is successfully finished\n")
 
 
 if __name__ == "__main__":
