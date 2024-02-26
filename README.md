@@ -1,6 +1,6 @@
 ## obs3dian
 Easy image controller for obsidian. Change internal file links to external S3 links.
-obs3dian converts local image file path to external url by uploading file in S3.
+Obs3dian converts local image file path to external url by uploading file in S3.
 
 ## Installation
 
@@ -25,7 +25,7 @@ $ pip install obs3dian
 ```console
 $ obs3dian config
 
-Config file is not founded... input your configuration
+Config file is not founded... Input your configuration
 
 AWS Profile Name [your aws profile]: 
 S3 bucket Name [your bucket name]: 
@@ -83,4 +83,10 @@ $ obs3dian --help
 ```
 
 </div>
+
+## Info
+* Obs3dian converts all *.md files contain input path.
+  * If given path is dir then dir/*.md, dir/subdir/*.md is all converted.
+* Created Bucket is public read.
+* run command automatically executes apply before run
 
