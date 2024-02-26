@@ -1,10 +1,9 @@
 [tool.poetry]
 name = "obs3dian"
-version = "0.1.0"
+version = "0.2.2"
 description = "Easy image controller for obsidian. Change internal file links to externa"
 authors = ["정명진 <thinkjin99@gmail.com>"]
 readme = "README.md"
-packages = [{include = "src", from="obs3dian"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
