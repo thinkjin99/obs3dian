@@ -88,12 +88,11 @@ def apply():
     print("Connected to AWS S3")
 
     if s3.create_bucket():
-        print(f"Bucket {configs["bucket_name"]} created")
+        print(f"Bucket {configs['bucket_name']} created")
         print("Bucket has public read access so anyone can see files in your bucket")
         s3.put_public_access_policy()
     else:
-        print(f"Bucket {configs["bucket_name"]} is already exists")
-
+        print(f"Bucket {configs['bucket_name']} is already exists")
 
     if not output_folder_path.exists():
         try:
@@ -117,7 +116,7 @@ def config():
         or default
     )
     try:
-        #Last config data
+        # Last config data
         configs: dict = _load_configs()
         default_profile_name = configs["profile_name"]
         default_bucket_name = configs["bucket_name"]
@@ -125,11 +124,11 @@ def config():
         default_image_path = configs["image_folder_path"]
 
     except FileNotFoundError:
-        #First init default
+        # First init default
         default_profile_name = "your aws profile"
         default_bucket_name = "your bucket name"
         default_output_path = "your ouput path"
-        default_image_path =  "your image path"
+        default_image_path = "your image path"
 
     profile_name = default_input("AWS Profile Name", default_profile_name)
     bucket_name = default_input("S3 bucket Name", default_bucket_name)
@@ -166,10 +165,10 @@ def run(user_input_path: Path):
     Args:
         user_input_path (Path): user input path
     """
-    
-    apply() #run apply
-    typer.echo("") #new line
-    
+
+    apply()  # run apply
+    typer.echo("")  # new line
+
     user_input_path = _convert_path_absoulte(user_input_path)
     configs: dict = _load_configs()
     output_folder_path = _convert_path_absoulte(Path(configs["output_folder_path"]))
@@ -208,7 +207,9 @@ def run(user_input_path: Path):
                 typer.echo("")  # new line
 
     typer.echo("\n")  # new line after progress bar
-    typer.echo(f"Total converts: {len(markdown_file_paths)} obs3dian is successfully finished\n")
+    typer.echo(
+        f"Total converts: {len(markdown_file_paths)} obs3dian is successfully finished\n"
+    )
 
 
 if __name__ == "__main__":
