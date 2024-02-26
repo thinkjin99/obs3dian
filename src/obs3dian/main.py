@@ -4,8 +4,8 @@ import typer
 from pathlib import Path
 import time
 
-from src.core import create_obs3dian_runner
-from src.s3 import S3
+from .core import create_obs3dian_runner
+from .s3 import S3
 
 APP_NAME = "obs3dian"
 SETUP_FILE_NAME = "config.json"

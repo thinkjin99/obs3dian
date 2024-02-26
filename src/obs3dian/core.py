@@ -1,8 +1,8 @@
 import concurrent.futures
 from pathlib import Path
 
-from src.markdown import create_image_path_generator, write_md_file
-from src.s3 import S3
+from .markdown import create_image_path_generator, write_md_file
+from .s3 import S3
 
 from typing import Generator, Callable, List, Tuple
 
