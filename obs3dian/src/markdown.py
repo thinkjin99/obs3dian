@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from typing import Generator, List
+from typing import Generator, List, Callable
 
 
 def _get_image_names(markdown_file_path: Path) -> List[str]:
@@ -27,29 +27,46 @@ def _get_image_names(markdown_file_path: Path) -> List[str]:
     return image_names
 
 
-def generate_local_image_paths(
-    image_folder_path: Path, markdown_file_path: Path
-) -> Generator[Path, None, None]:
+def _get_all_images(image_folder_path: Path) -> dict[str, Path]:
     """
-    Create Genrator yields image path in md file
+    get all images in folder and create [name, Path] dict of all iamges
 
     Args:
         image_folder_path (Path): image folder path
-        markdown_file_path (Path): md file path
 
-    Yields:
-        Generator[Path, None, None]: yield image path generator
+    Returns:
+        dict[str, Path]: {name, Path}
     """
-    image_names: list[str] = _get_image_names(markdown_file_path)
-    image_name_set = set(image_names)
-    suffixes = set((".png", ".jpg", ".jpeg", ".gif"))
+    patt = r".*\.(png|jpg|jpeg|gif)$"
+    name_path_map: dict[str, Path] = {}
+    # search all subfolders
+    for file_path in image_folder_path.rglob("**/*"):
+        if re.search(patt, file_path.suffix):
+            name_path_map[file_path.name] = file_path
+    return name_path_map
 
-    # TODO use trie or something code is inefficient
-    for file_path in image_folder_path.rglob("**/*"):  # search all subfolders
-        if (
-            file_path.suffix in suffixes and file_path.name in image_name_set
-        ):  # 파일 이름이 존재한다면
-            yield file_path
+
+def create_image_path_generator(image_folder_path: Path) -> Callable:
+    name_path_map: dict = _get_all_images(
+        image_folder_path
+    )  # image name, path dict of all images in folder
+
+    def yield_image_path(markdown_file_path: Path) -> Generator[Path, None, None]:
+        """
+        Create Genrator yields image paths in md file
+
+        Args:
+            markdown_file_path:(Path): md file path
+
+        Yields:
+            Generator[Path, None, None]: yield image path generator
+        """
+        image_names: list[str] = _get_image_names(markdown_file_path)
+        for image_name in image_names:
+            if image_name in name_path_map:
+                yield name_path_map[image_name]
+
+    return yield_image_path
 
 
 def _replace_name_to_url(line: str, image_name: str, s3_url: str):

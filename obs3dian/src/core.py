@@ -1,7 +1,7 @@
 import concurrent.futures
 from pathlib import Path
 
-from src.markdown import generate_local_image_paths, write_md_file
+from src.markdown import create_image_path_generator, write_md_file
 from src.s3 import S3
 
 from typing import Generator, Callable, List, Tuple
@@ -49,11 +49,16 @@ def create_obs3dian_runner(
 
     Args:
         s3 (S3): S3 controller
+        image_folder_path (Path): image folder path
         output_folder_path (Path): output folder path
 
     Returns:
         Callable: runner
     """
+
+    image_path_creator: Callable = create_image_path_generator(
+        image_folder_path
+    )  # function to make image path generator
 
     def run(markdown_file_path: Path) -> None:
         """
@@ -62,10 +67,7 @@ def create_obs3dian_runner(
         Args:
             markdown_file_path (Path): mark down file path
         """
-        image_path_generator: Generator = generate_local_image_paths(
-            image_folder_path, markdown_file_path
-        )
-
+        image_path_generator: Generator = image_path_creator(markdown_file_path)
         put_image_paths = put_images_in_md(s3, markdown_file_path, image_path_generator)
 
         # (image name, S3 URL) to convert link
