@@ -28,7 +28,7 @@ def _load_configs() -> dict:
         return configs
 
     except FileNotFoundError as e:
-        print("Config file is not founded. Init your configuration")
+        print("Config file is not founded... input your configuration\n")
         raise e
 
 
@@ -125,10 +125,10 @@ def config():
 
     except FileNotFoundError:
         # First init default
-        default_profile_name = "your aws profile"
-        default_bucket_name = "your bucket name"
-        default_output_path = "your ouput path"
-        default_image_path = "your image path"
+        default_profile_name = "default"
+        default_bucket_name = "obs3dian"
+        default_output_path = "."
+        default_image_path = "."
 
     profile_name = default_input("AWS Profile Name", default_profile_name)
     bucket_name = default_input("S3 bucket Name", default_bucket_name)
@@ -208,7 +208,7 @@ def run(user_input_path: Path):
 
     typer.echo("\n")  # new line after progress bar
     typer.echo(
-        f"Total converts: {len(markdown_file_paths)} obs3dian is successfully finished\n"
+        f"Total converts: {len(markdown_file_paths)}\nobs3dian is successfully finished\n"
     )
 
 
