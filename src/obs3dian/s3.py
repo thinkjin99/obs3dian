@@ -85,7 +85,7 @@ class S3:
 
     def get_image_url(self, markdown_path: Path, image_path: Path) -> str:
         region = self.session.region_name
-        key = str(markdown_path / image_path)
+        key = f"{markdown_path.stem} / {image_path.name}"
         s3_url = f"https://{self.bucket_name}.s3.{region}.amazonaws.com/{parse.quote(key)}"  # image uploaded url
         return s3_url
 
@@ -94,7 +94,7 @@ class S3:
             self.s3.put_object(
                 Bucket=self.bucket_name,
                 Body=image_path.open("rb"),
-                Key=str(markdown_path / image_path),
+                Key=f"{markdown_path.stem} / {image_path.name}",
             )  # upload image
             return image_path
 
