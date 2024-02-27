@@ -15,26 +15,28 @@ class S3:
     def __init__(
         self,
         profile_name: str,
+        bucket_name: str,
         aws_access_key: str,
         aws_secret_key: str,
-        bucket_name: str,
+        useprofile: bool = True,
     ) -> None:
-        try:
-            if aws_access_key and aws_secret_key:  # if user has cli profile
-                self.session = boto3.Session(
-                    aws_access_key_id=aws_access_key,
-                    aws_secret_access_key=aws_secret_key,
-                )
-            else:
+
+        if useprofile:
+            if profile_name:
                 self.session = boto3.Session(profile_name=profile_name)
+            else:
+                raise ValueError("Profile name is required")
+        elif aws_access_key and aws_secret_key:  # if user has cli profile
+            self.session = boto3.Session(
+                aws_access_key_id=aws_access_key,
+                aws_secret_access_key=aws_secret_key,
+            )
+        else:
+            raise ValueError("AWS key is required")
 
-            self.s3 = self.session.client("s3")
-            self.bucket_name = bucket_name
-            return
-
-        except ClientError as e:
-            print("Can't Connect S3")
-            raise e
+        self.s3 = self.session.client("s3")
+        self.bucket_name = bucket_name
+        return
 
     def _check_bucket_exist(self) -> bool:
         try:
@@ -47,7 +49,7 @@ class S3:
                 raise e
             return False  # 404 is not exists error
 
-    def put_public_access_policy(self) -> None:
+    def _put_public_access_policy(self) -> None:
         policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -90,6 +92,7 @@ class S3:
                     "RestrictPublicBuckets": False,
                 },
             )
+            self._put_public_access_policy()
             return True
 
         except ClientError as e:

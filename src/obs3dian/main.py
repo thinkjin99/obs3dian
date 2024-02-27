@@ -54,7 +54,14 @@ def _render_animation(future: concurrent_futures.Future, echo_text: str) -> None
 
 
 @app.command()
-def apply():
+def apply(
+    useprofile: Annotated[
+        bool,
+        typer.Option(
+            help="Use cli profile when connect to S3. If you want to connect by key uses --no-useprofile"
+        ),
+    ] = True
+):
     """
     Apply settings from config.json file
 
@@ -67,17 +74,16 @@ def apply():
     )
 
     s3 = S3(
-        configs.profile_name,
-        configs.aws_access_key,
-        configs.aws_secret_key,
-        configs.bucket_name,
+        profile_name=configs.profile_name,
+        aws_access_key=configs.aws_access_key,
+        aws_secret_key=configs.aws_secret_key,
+        bucket_name=configs.bucket_name,
+        useprofile=useprofile,  # use profile or key
     )
-    print("Connected to AWS S3")
 
     if s3.create_bucket():
         print(f"Bucket {configs.bucket_name} created")
         print("Bucket has public read access so anyone can see files in your bucket")
-        s3.put_public_access_policy()
     else:
         print(f"Bucket {configs.bucket_name} is already exists")
 
@@ -151,7 +157,13 @@ def run(
     user_input_path: Path,
     overwrite: Annotated[
         bool, typer.Option(help="Overwrite original md file default is create new file")
-    ],
+    ] = False,
+    useprofile: Annotated[
+        bool,
+        typer.Option(
+            help="Use cli profile when connect to S3. If you want to connect by key uses --no-useprofile"
+        ),
+    ] = True,
 ):
     """
     Run obs3dian main command, get image local file paths from md file.
@@ -162,17 +174,20 @@ def run(
         user_input_path (Path): user input path
     """
 
-    apply()  # run apply
+    configs: Configuration = load_configs()
+
+    apply(useprofile)  # run apply
     typer.echo("")  # new line
 
     user_input_path = _convert_path_absoulte(user_input_path)
-    configs: Configuration = load_configs()
     output_folder_path = _convert_path_absoulte(Path(configs.output_folder_path))
+
     s3 = S3(
-        configs.profile_name,
-        configs.aws_access_key,
-        configs.aws_secret_key,
-        configs.bucket_name,
+        profile_name=configs.profile_name,
+        aws_access_key=configs.aws_access_key,
+        aws_secret_key=configs.aws_secret_key,
+        bucket_name=configs.bucket_name,
+        useprofile=useprofile,  # use profile or key
     )
 
     runner = create_obs3dian_runner(
