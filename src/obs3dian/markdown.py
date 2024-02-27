@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-
+import shutil
 from typing import Generator, List, Callable
 
 
@@ -82,6 +82,7 @@ def write_md_file(
     markdown_file_path: Path,
     output_folder_path: Path,
     link_replace_map: List[tuple[str, str]],
+    is_overwrite: bool = False,
 ):
     """
     Write new .md that replace local file link to S3 url.
@@ -98,3 +99,6 @@ def write_md_file(
                 for image_name, s3_url in link_replace_map:
                     line = _replace_name_to_url(line, image_name, s3_url)
                 output_file.write(line)  # if no replace just copy line
+
+    if is_overwrite:
+        shutil.move(out_file_path, markdown_file_path)

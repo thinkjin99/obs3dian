@@ -1,6 +1,8 @@
 import concurrent.futures as concurrent_futures
 
 import typer
+from typing_extensions import Annotated
+
 from pathlib import Path
 import time
 
@@ -107,31 +109,29 @@ def config():
     except FileNotFoundError:
         configs: Configuration = Configuration()
 
-    default_profile_name = configs.profile_name
-    default_bucket_name = configs.bucket_name
-    default_output_path = configs.output_folder_path
-    default_image_path = configs.image_folder_path
-    default_aws_access_key = configs.aws_access_key
-    default_aws_secret_key = configs.aws_secret_key
+    profile_name = configs.profile_name
+    aws_access_key = configs.aws_access_key
+    aws_secret_key = configs.aws_secret_key
+    bucket_name = configs.bucket_name
+    output_path = configs.output_folder_path
+    image_folder_path = configs.image_folder_path
 
-    profile_name = default_input("AWS CLI Profile Name", default_profile_name)
+    typer.echo("AWS-CLI profile name or AWS key is required")
+    if input("Do you want to config AWS-CLI profile name? (Y/N): ") in ["y", "Y"]:
+        profile_name = default_input("AWS CLI Profile Name", profile_name)
 
-    if not profile_name:
-        aws_access_key = default_input(
-            "AWS AccessKey (Optional if you input profile)", default_aws_access_key
-        )
-        aws_secret_key = default_input(
-            "AWS Secret Key (Optional if you input profile)", default_aws_secret_key
-        )
+    else:
+        aws_access_key = default_input("AWS AccessKey", aws_access_key)
+        aws_secret_key = default_input("AWS Secret Key", aws_secret_key)
         if not (aws_access_key and aws_secret_key):
-            raise ValueError("You must provide AWS key or AWS-CLI profile name")
+            raise ValueError("You must provide both access and secret key")
 
-    bucket_name = default_input("S3 bucket Name", default_bucket_name)
+    bucket_name = default_input("S3 bucket Name", bucket_name)
 
-    output_path = Path(default_input("Output Path", default_output_path))
+    output_path = Path(default_input("Output Path", output_path))
     output_path = _convert_path_absoulte(output_path, False)
 
-    image_folder_path = Path(default_input("Image Folder Path", default_image_path))
+    image_folder_path = Path(default_input("Image Folder Path", image_folder_path))
     image_folder_path = _convert_path_absoulte(image_folder_path, True)
 
     json_data = {
@@ -147,7 +147,12 @@ def config():
 
 
 @app.command()
-def run(user_input_path: Path):
+def run(
+    user_input_path: Path,
+    overwrite: Annotated[
+        bool, typer.Option(help="Overwrite original md file default is create new file")
+    ],
+):
     """
     Run obs3dian main command, get image local file paths from md file.
     After extracting image paths, it uploads images to s3 and replaces all file links in .md to S3 links.
@@ -171,7 +176,7 @@ def run(user_input_path: Path):
     )
 
     runner = create_obs3dian_runner(
-        s3, Path(configs.image_folder_path), output_folder_path
+        s3, Path(configs.image_folder_path), output_folder_path, overwrite
     )  # create main function
 
     if user_input_path.is_dir():

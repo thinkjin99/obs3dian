@@ -41,7 +41,10 @@ def put_images_in_md(
 
 
 def create_obs3dian_runner(
-    s3: S3, image_folder_path: Path, output_folder_path: Path
+    s3: S3,
+    image_folder_path: Path,
+    output_folder_path: Path,
+    is_overwrite: bool = False,
 ) -> Callable:
     """
     Create runner fucntion object
@@ -80,7 +83,7 @@ def create_obs3dian_runner(
             )  # image name in .md would convert to S3 url
 
         write_md_file(
-            markdown_file_path, output_folder_path, link_replace_pairs
+            markdown_file_path, output_folder_path, link_replace_pairs, is_overwrite
         )  # write new md with S3 link
         return
 

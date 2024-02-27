@@ -31,7 +31,7 @@ def load_configs() -> Configuration:
         with config_path.open("r") as f:
             configs = json.load(f)
 
-        return Configuration(**configs)
+        return Configuration(**configs)  # create config data class
 
     except FileNotFoundError as e:
         print("Config file is not founded... input your configuration\n")

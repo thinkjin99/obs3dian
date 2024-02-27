@@ -20,13 +20,13 @@ class S3:
         bucket_name: str,
     ) -> None:
         try:
-            if profile_name:  # if user has cli profile
-                self.session = boto3.Session(profile_name=profile_name)
-            else:
+            if aws_access_key and aws_secret_key:  # if user has cli profile
                 self.session = boto3.Session(
                     aws_access_key_id=aws_access_key,
                     aws_secret_access_key=aws_secret_key,
                 )
+            else:
+                self.session = boto3.Session(profile_name=profile_name)
 
             self.s3 = self.session.client("s3")
             self.bucket_name = bucket_name
