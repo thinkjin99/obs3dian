@@ -1,35 +1,15 @@
 import concurrent.futures as concurrent_futures
-import json
+
 import typer
 from pathlib import Path
 import time
 
 from .core import create_obs3dian_runner
+from .config import load_configs, save_config, APP_NAME, Configuration
 from .s3 import S3
 
-APP_NAME = "obs3dian"
-SETUP_FILE_NAME = "config.json"
-APP_DIR_PATH = typer.get_app_dir(APP_NAME)
 
 app = typer.Typer(name=APP_NAME)
-
-
-def _load_configs() -> dict:
-    """
-    Load config json file from app dir
-
-    Returns:
-        dict: config json
-    """
-    try:
-        config_path = Path(APP_DIR_PATH) / SETUP_FILE_NAME
-        with config_path.open("r") as f:
-            configs = json.load(f)
-        return configs
-
-    except FileNotFoundError as e:
-        print("Config file is not founded... input your configuration\n")
-        raise e
 
 
 def _convert_path_absoulte(path: Path, strict=True) -> Path:
@@ -79,20 +59,25 @@ def apply():
     Raises:
         e: invalid output path
     """
-    configs: dict = _load_configs()
+    configs: Configuration = load_configs()
     output_folder_path = _convert_path_absoulte(
-        Path(configs["output_folder_path"]), strict=False
+        Path(configs.output_folder_path), strict=False
     )
 
-    s3 = S3(configs["profile_name"], configs["bucket_name"])
+    s3 = S3(
+        configs.profile_name,
+        configs.aws_access_key,
+        configs.aws_secret_key,
+        configs.bucket_name,
+    )
     print("Connected to AWS S3")
 
     if s3.create_bucket():
-        print(f"Bucket {configs['bucket_name']} created")
+        print(f"Bucket {configs.bucket_name} created")
         print("Bucket has public read access so anyone can see files in your bucket")
         s3.put_public_access_policy()
     else:
-        print(f"Bucket {configs['bucket_name']} is already exists")
+        print(f"Bucket {configs.bucket_name} is already exists")
 
     if not output_folder_path.exists():
         try:
@@ -117,20 +102,30 @@ def config():
     )
     try:
         # Last config data
-        configs: dict = _load_configs()
-        default_profile_name = configs["profile_name"]
-        default_bucket_name = configs["bucket_name"]
-        default_output_path = configs["output_folder_path"]
-        default_image_path = configs["image_folder_path"]
+        configs: Configuration = load_configs()
 
     except FileNotFoundError:
-        # First init default
-        default_profile_name = "default"
-        default_bucket_name = "obs3dian"
-        default_output_path = "."
-        default_image_path = "."
+        configs: Configuration = Configuration()
 
-    profile_name = default_input("AWS Profile Name", default_profile_name)
+    default_profile_name = configs.profile_name
+    default_bucket_name = configs.bucket_name
+    default_output_path = configs.output_folder_path
+    default_image_path = configs.image_folder_path
+    default_aws_access_key = configs.aws_access_key
+    default_aws_secret_key = configs.aws_secret_key
+
+    profile_name = default_input("AWS CLI Profile Name", default_profile_name)
+
+    if not profile_name:
+        aws_access_key = default_input(
+            "AWS AccessKey (Optional if you input profile)", default_aws_access_key
+        )
+        aws_secret_key = default_input(
+            "AWS Secret Key (Optional if you input profile)", default_aws_secret_key
+        )
+        if not (aws_access_key and aws_secret_key):
+            raise ValueError("You must provide AWS key or AWS-CLI profile name")
+
     bucket_name = default_input("S3 bucket Name", default_bucket_name)
 
     output_path = Path(default_input("Output Path", default_output_path))
@@ -141,18 +136,14 @@ def config():
 
     json_data = {
         "profile_name": profile_name,
+        "aws_access_key": aws_access_key,
+        "aws_secret_key": aws_secret_key,
         "bucket_name": bucket_name,
         "output_folder_path": str(output_path),
         "image_folder_path": str(image_folder_path),
     }
 
-    app_dir_path = Path(APP_DIR_PATH)  # create app setting folder
-    if not app_dir_path.exists():
-        app_dir_path.mkdir()
-
-    config_path = app_dir_path / SETUP_FILE_NAME
-    with config_path.open("w") as f:
-        json.dump(json_data, f)  # write config.json
+    save_config(json_data)
 
 
 @app.command()
@@ -170,12 +161,17 @@ def run(user_input_path: Path):
     typer.echo("")  # new line
 
     user_input_path = _convert_path_absoulte(user_input_path)
-    configs: dict = _load_configs()
-    output_folder_path = _convert_path_absoulte(Path(configs["output_folder_path"]))
-    s3 = S3(configs["profile_name"], configs["bucket_name"])
+    configs: Configuration = load_configs()
+    output_folder_path = _convert_path_absoulte(Path(configs.output_folder_path))
+    s3 = S3(
+        configs.profile_name,
+        configs.aws_access_key,
+        configs.aws_secret_key,
+        configs.bucket_name,
+    )
 
     runner = create_obs3dian_runner(
-        s3, Path(configs["image_folder_path"]), output_folder_path
+        s3, Path(configs.image_folder_path), output_folder_path
     )  # create main function
 
     if user_input_path.is_dir():

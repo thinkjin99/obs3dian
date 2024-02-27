@@ -12,9 +12,22 @@ class S3:
     To use this class you need AWS CLI profile which has permission to create public bucket and put images.
     """
 
-    def __init__(self, profile_name: str, bucket_name: str) -> None:
+    def __init__(
+        self,
+        profile_name: str,
+        aws_access_key: str,
+        aws_secret_key: str,
+        bucket_name: str,
+    ) -> None:
         try:
-            self.session = boto3.Session(profile_name=profile_name)
+            if profile_name:  # if user has cli profile
+                self.session = boto3.Session(profile_name=profile_name)
+            else:
+                self.session = boto3.Session(
+                    aws_access_key_id=aws_access_key,
+                    aws_secret_access_key=aws_secret_key,
+                )
+
             self.s3 = self.session.client("s3")
             self.bucket_name = bucket_name
             return
