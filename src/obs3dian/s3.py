@@ -115,6 +115,7 @@ class S3:
                 Bucket=self.bucket_name,
                 Body=image_path.open("rb"),
                 Key=f"{markdown_path.stem} / {image_path.name}",
+                ContentType=f"image/{image_path.suffix}",
             )  # upload image
             return image_path
 

@@ -73,7 +73,7 @@ def _replace_name_to_url(line: str, image_name: str, s3_url: str):
     # Local file link -> S3 url
     local_image_link = r"!\[\[" + image_name + r"\]\]"
     if local_link := re.search(local_image_link, line):  # 이미지 링크가 존재하는지 탐색
-        s3_link = f"![][{s3_url}]"
+        s3_link = f"![]({s3_url})"
         line = line.replace(local_link.group(), s3_link)  # s3 링크로 대체
     return line
 
