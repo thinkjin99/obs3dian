@@ -75,9 +75,9 @@ def apply(
 
     s3 = S3(
         profile_name=configs.profile_name,
+        bucket_name=configs.bucket_name,
         aws_access_key=configs.aws_access_key,
         aws_secret_key=configs.aws_secret_key,
-        bucket_name=configs.bucket_name,
         useprofile=useprofile,  # use profile or key
     )
 
@@ -85,7 +85,8 @@ def apply(
         print(f"Bucket {configs.bucket_name} created")
         print("Bucket has public read access so anyone can see files in your bucket")
     else:
-        print(f"Bucket {configs.bucket_name} is already exists")
+        print(f"Bucket {configs.bucket_name} is already exists try with other name")
+        return
 
     if not output_folder_path.exists():
         try:
@@ -180,7 +181,8 @@ def run(
     typer.echo("")  # new line
 
     user_input_path = _convert_path_absoulte(user_input_path)
-    output_folder_path = _convert_path_absoulte(Path(configs.output_folder_path))
+    output_folder_path = Path(configs.output_folder_path)
+    image_folder_path = Path(configs.image_folder_path)
 
     s3 = S3(
         profile_name=configs.profile_name,
@@ -191,7 +193,7 @@ def run(
     )
 
     runner = create_obs3dian_runner(
-        s3, Path(configs.image_folder_path), output_folder_path, overwrite
+        s3, image_folder_path, output_folder_path, overwrite
     )  # create main function
 
     if user_input_path.is_dir():
