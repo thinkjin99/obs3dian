@@ -18,7 +18,7 @@ class S3:
         bucket_name: str,
         aws_access_key: str,
         aws_secret_key: str,
-        useprofile: bool = True,
+        useprofile: bool,
     ) -> None:
 
         if useprofile:
@@ -30,6 +30,7 @@ class S3:
             self.session = boto3.Session(
                 aws_access_key_id=aws_access_key,
                 aws_secret_access_key=aws_secret_key,
+                region_name="ap-northeast-2",
             )
         else:
             raise ValueError("AWS key is required")
@@ -45,9 +46,12 @@ class S3:
 
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
-            if error_code != "404":  # if no permission or bad request raise error
+            if error_code == "404":  # if no bukcet return false
+                return False
+            elif error_code == "403":  # 403 means bucket exists but no permission
+                return True
+            else:
                 raise e
-            return False  # 404 is not exists error
 
     def _put_public_access_policy(self) -> None:
         policy = {
