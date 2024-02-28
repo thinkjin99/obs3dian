@@ -7,7 +7,7 @@ from pathlib import Path
 import time
 
 from .core import create_obs3dian_runner
-from .config import load_configs, save_config, APP_NAME, Configuration
+from .config import load_configs, save_config, remove_config, APP_NAME, Configuration
 from .s3 import S3
 
 
@@ -101,10 +101,20 @@ def apply(
 
 
 @app.command()
-def config():
+def config(
+    reset: Annotated[
+        bool,
+        typer.Option(help="Reset config.json file"),
+    ] = False,
+):
     """
-    Write config data to .json file
+    Writes config file. This command sets setting for run obs3dian.\n
+    It should be executed first before run obs3dian. If you want to apply setting use command 'apply'
     """
+    if reset:
+        remove_config()  # save empty data to reset config file
+        return
+
     default_input = (
         lambda description, default: input(f"{description} [{default}]: ").strip()
         or default
@@ -157,7 +167,10 @@ def config():
 def run(
     user_input_path: Path,
     overwrite: Annotated[
-        bool, typer.Option(help="Overwrite original md file default is create new file")
+        bool,
+        typer.Option(
+            help="Overwrites original md file in same file path. (default is creating new file under output folder)"
+        ),
     ] = False,
     useprofile: Annotated[
         bool,
@@ -167,12 +180,12 @@ def run(
     ] = True,
 ):
     """
-    Run obs3dian main command, get image local file paths from md file.
-    After extracting image paths, it uploads images to s3 and replaces all file links in .md to S3 links.
+    Get images local file paths from md files in given path.
+    After extracting image paths, it uploads images to S3 and replaces all file links in .md to S3 links.
     Outputs will be wrriten under output folder and it's image links would replaced to S3 links
 
     Args:
-        user_input_path (Path): user input path
+        user_input_path (Path): your markdown file path to convert. (dir or file)
     """
 
     configs: Configuration = load_configs()

@@ -30,7 +30,6 @@ def load_configs() -> Configuration:
         config_path = Path(APP_DIR_PATH) / SETUP_FILE_NAME
         with config_path.open("r") as f:
             configs = json.load(f)
-
         return Configuration(**configs)  # create config data class
 
     except FileNotFoundError as e:
@@ -46,3 +45,12 @@ def save_config(json_data: dict):
     config_path = app_dir_path / SETUP_FILE_NAME
     with config_path.open("w") as f:
         json.dump(json_data, f)  # write config.json
+
+
+def remove_config():
+    app_dir_path = Path(APP_DIR_PATH)  # create app setting folder
+    config_path = app_dir_path / SETUP_FILE_NAME
+    try:
+        config_path.unlink()
+    except FileNotFoundError:
+        print("Config file is not exists run config first")
