@@ -55,10 +55,10 @@ def _render_animation(future: concurrent_futures.Future, echo_text: str) -> None
 
 @app.command()
 def apply(
-    useprofile: Annotated[
+    usekey: Annotated[
         bool,
         typer.Option(
-            help="Use cli profile when connect to S3. If you want to connect by key uses --no-useprofile"
+            help="Use cli profile when connect to S3. If you want to connect by key uses --no-usekey"
         ),
     ] = True
 ):
@@ -78,7 +78,7 @@ def apply(
         bucket_name=configs.bucket_name,
         aws_access_key=configs.aws_access_key,
         aws_secret_key=configs.aws_secret_key,
-        useprofile=useprofile,  # use profile or key
+        usekey=usekey,  # use profile or key
     )
 
     if s3.create_bucket():
@@ -172,12 +172,12 @@ def run(
             help="Overwrites original md file in same file path. (default is creating new file under output folder)"
         ),
     ] = False,
-    useprofile: Annotated[
+    usekey: Annotated[
         bool,
         typer.Option(
-            help="Use cli profile when connect to S3. If you want to connect by key uses --no-useprofile"
+            help="Use cli profile when connect to S3. If you want to connect by key uses --no-usekey"
         ),
-    ] = True,
+    ] = False,
 ):
     """
     Get images local file paths from md files in given path.
@@ -190,7 +190,7 @@ def run(
 
     configs: Configuration = load_configs()
 
-    apply(useprofile)  # run apply
+    apply(usekey)  # run apply
     typer.echo("")  # new line
 
     user_input_path = _convert_path_absoulte(user_input_path)
@@ -202,7 +202,7 @@ def run(
         aws_access_key=configs.aws_access_key,
         aws_secret_key=configs.aws_secret_key,
         bucket_name=configs.bucket_name,
-        useprofile=useprofile,  # use profile or key
+        usekey=usekey,  # use profile or key
     )
 
     runner = create_obs3dian_runner(
