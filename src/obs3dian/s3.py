@@ -46,11 +46,11 @@ class S3:
 
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
-            if error_code == "404":  # if no bukcet return false
+            if error_code == "404":  # if bucket not exists return false
                 return False
             elif error_code == "403":  # 403 means bucket exists but no permission
                 return True
-            else:
+            else:  # bad reqeust
                 raise e
 
     def _put_public_access_policy(self) -> None:
