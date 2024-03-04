@@ -15,9 +15,7 @@ def _get_image_names(markdown_file_path: Path) -> List[str]:
         List[str]: image names in md file
     """
     image_names = []
-    patt = (
-        r"!\[\[(.*?)\.(png|jpg|jpeg|gif)\]\]"  # group 1 = file_name, group 2 = foramt
-    )
+    patt = r"!\[\[(.*)\.(png|jpg|jpeg|gif)\|?.*?\]\]"  # group 1 = file_name, group 2 = foramt
     with markdown_file_path.open("r") as f:
         while line := f.readline():
             if search_results := re.findall(patt, line):
@@ -71,10 +69,13 @@ def create_image_path_generator(image_folder_path: Path) -> Callable:
 
 def _replace_name_to_url(line: str, image_name: str, s3_url: str):
     # Local file link -> S3 url
-    local_image_link = r"!\[\[" + image_name + r"\]\]"
-    if local_link := re.search(local_image_link, line):  # 이미지 링크가 존재하는지 탐색
-        s3_link = f"![]({s3_url})"
-        line = line.replace(local_link.group(), s3_link)  # s3 링크로 대체
+    local_image_patt = rf"!\[\[({image_name})\|?(.*)?\]\]"
+    if matched := re.search(local_image_patt, line):  # 이미지 링크가 존재하는지 탐색
+        if len(matched.group()) > 1:
+            image_meta_data = matched.group(2)
+
+        replace_str = f"![{image_meta_data}]({s3_url})"
+        line = line.replace(matched.group(), replace_str)  # s3 링크로 대체
     return line
 
 
