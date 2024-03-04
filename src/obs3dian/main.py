@@ -60,7 +60,7 @@ def apply(
         typer.Option(
             help="Use cli profile when connect to S3. If you want to connect by key uses --no-usekey"
         ),
-    ] = True
+    ] = False
 ):
     """
     Apply settings from config.json file
@@ -86,7 +86,6 @@ def apply(
         print("Bucket has public read access so anyone can see files in your bucket")
     else:
         print(f"Bucket {configs.bucket_name} is already exists try with other name")
-        return
 
     if not output_folder_path.exists():
         try:
@@ -189,7 +188,6 @@ def run(
     """
 
     configs: Configuration = load_configs()
-
     apply(usekey)  # run apply
     typer.echo("")  # new line
 

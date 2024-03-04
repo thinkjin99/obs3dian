@@ -22,18 +22,18 @@ class S3:
     ) -> None:
 
         if usekey:
-            if aws_access_key and aws_secret_key:  # if user has cli profile
-                self.session = boto3.Session(
-                    aws_access_key_id=aws_access_key,
-                    aws_secret_access_key=aws_secret_key,
-                    region_name="ap-northeast-2",
-                )
-                
-        elif profile_name:
-            self.session = boto3.Session(profile_name=profile_name)
-        
+            assert (
+                aws_access_key and aws_secret_key
+            ), "AWS Key error"  # if user has cli profile
+            self.session = boto3.Session(
+                aws_access_key_id=aws_access_key,
+                aws_secret_access_key=aws_secret_key,
+                region_name="ap-northeast-2",
+            )
+
         else:
-            raise ValueError("AWS key is required")
+            assert profile_name, "AWS profile is required"
+            self.session = boto3.Session(profile_name=profile_name)
 
         self.s3 = self.session.client("s3")
         self.bucket_name = bucket_name
