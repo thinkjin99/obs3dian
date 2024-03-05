@@ -1,6 +1,6 @@
 import concurrent.futures
 from pathlib import Path
-from typing import Generator, Callable, List, Tuple
+from typing import Callable, List
 
 from .markdown import (
     get_images_name_path_map,
@@ -11,7 +11,7 @@ from .markdown import (
 from .s3 import S3
 
 
-def put_images_in_md(
+def _upload_images_from_md(
     s3: S3, markdown_path: Path, images: List[ImageText]
 ) -> List[ImageText]:
     """
@@ -60,9 +60,6 @@ def create_obs3dian_runner(
         Callable: runner
     """
 
-    # image_path_creator: Callable = create_image_path_generator(
-    #     image_folder_path
-    # )  # function to make image path generator
     name_path_map: dict[str, Path] = get_images_name_path_map(image_folder_path)
 
     def run(markdown_file_path: Path) -> None:
@@ -75,20 +72,9 @@ def create_obs3dian_runner(
         images: List[ImageText] = extract_images_from_md(
             markdown_file_path, name_path_map
         )
-        # image_paths = [name_path_map[image.name] for image in images]
-        put_image_paths = put_images_in_md(s3, markdown_file_path, images)
-
-        # (image name, S3 URL) to convert link
-        link: List = []
-        for image_path in put_image_paths:
-            image_name = image_path.name
-            s3_url = s3.get_image_url(markdown_file_path, image_path)
-            link_replace_pairs.append(
-                (image_name, s3_url)
-            )  # image name in .md would convert to S3 url
-
+        uploaded_images = _upload_images_from_md(s3, markdown_file_path, images)
         write_md_file(
-            markdown_file_path, output_folder_path, link_replace_pairs, is_overwrite
+            markdown_file_path, output_folder_path, uploaded_images, is_overwrite
         )  # write new md with S3 link
         return
 

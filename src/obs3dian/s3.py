@@ -105,7 +105,7 @@ class S3:
             print("Error occured in create bucket")
             raise e
 
-    def get_image_url(self, markdown_path: Path, image_path: Path) -> str:
+    def _get_image_url(self, markdown_path: Path, image_path: Path) -> str:
         region = self.session.region_name
         key = f"{markdown_path.stem} / {image_path.name}"
         s3_url = f"https://{self.bucket_name}.s3.{region}.amazonaws.com/{parse.quote(key)}"  # image uploaded url
@@ -119,6 +119,8 @@ class S3:
                 Key=f"{markdown_path.stem} / {image.name}",
                 ContentType=f"image/{image.path.suffix}",
             )  # upload image
+            s3_url = self._get_image_url(markdown_path, image.path)
+            image.s3_url = s3_url
             return image
 
         except ClientError as e:

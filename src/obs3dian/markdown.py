@@ -2,7 +2,8 @@ import re
 from pathlib import Path
 from dataclasses import dataclass
 import shutil
-from typing import Generator, List, Callable, Tuple
+from typing import List, Callable, Tuple
+from urllib.parse import unquote
 
 
 @dataclass
@@ -11,6 +12,7 @@ class ImageText:
     line: int
     path: Path
     metadata: str | None = None
+    s3_url: str | None = None
 
 
 def _extract_image_from_no_path_patt(match_result: re.Match) -> dict:
@@ -28,7 +30,7 @@ def _extrace_image_from_path_patt(match_result: re.Match) -> dict | None:
         return None
 
     try:
-        image_info["name"] = Path(image_path).name  # update imageText name
+        image_info["name"] = unquote(Path(image_path).name)  # update imageText name
         return image_info
 
     except Exception:
@@ -57,14 +59,14 @@ def extract_images_from_md(
 
     images: List[ImageText] = []
     with markdown_file_path.open("r") as f:
-        for i, line in enumerate(f):  # read lines
+        for line_no, line in enumerate(f):  # read lines
             for func, patt in func_patt_map:
                 if match_results := re.finditer(patt, line):  # match pattern
                     for match_result in match_results:
                         if image_info := func(match_result):
-                            image_path = Path(name_path_map[image_info["name"]])
+                            image_info["path"] = name_path_map[image_info["name"]]
                             images.append(
-                                ImageText(**image_info, path=image_path, line=i)
+                                ImageText(**image_info, line=line_no)
                             )  # append imageText data
     return images
 
@@ -88,22 +90,10 @@ def get_images_name_path_map(image_folder_path: Path) -> dict[str, Path]:
     return name_path_map
 
 
-def _replace_name_to_url(line: str, image_name: str, s3_url: str):
-    # Local file link -> S3 url
-    local_image_patt = rf"!\[\[({image_name})\|?(.*)?\]\]"
-    if matched := re.search(local_image_patt, line):  # 이미지 링크가 존재하는지 탐색
-        if len(matched.group()) > 1:
-            image_meta_data = matched.group(2)
-
-        replace_str = f"![{image_meta_data}]({s3_url})"
-        line = line.replace(matched.group(), replace_str)  # s3 링크로 대체
-    return line
-
-
 def write_md_file(
     markdown_file_path: Path,
     output_folder_path: Path,
-    link_replace_map: List[tuple[str, str]],
+    uploaded_images: List[ImageText],
     is_overwrite: bool = False,
 ):
     """
@@ -117,9 +107,10 @@ def write_md_file(
     out_file_path = output_folder_path.joinpath(markdown_file_path.name)
     with open(markdown_file_path, "r") as origin_file:  # open origin file
         with open(out_file_path, "w") as output_file:
-            while line := origin_file.readline():
-                for image_name, s3_url in link_replace_map:
-                    line = _replace_name_to_url(line, image_name, s3_url)
+            for line_no, line in enumerate(origin_file):
+                for image in uploaded_images:
+                    if line_no == image.line:
+                        line = f"![{image.metadata}]({image.s3_url})"
                 output_file.write(line)  # if no replace just copy line
 
     if is_overwrite:
