@@ -16,8 +16,11 @@ class ImageText:
     name: str
     line_no: int
     path: Path
-    metadata: str | None = None
+    metadata: str
     s3_url: str | None = None
+
+    def __post_init__(self):
+        self.metadata = "" if not self.metadata else self.metadata
 
 
 def _extract_image_from_no_path_patt(match_result: re.Match) -> dict:
@@ -78,7 +81,7 @@ def extract_images_from_md(
         List[ImageText]: Image data in markdown
     """
     no_path_patt = r"!\[\[(?P<name>[^]]+\.(png|jpg|jpeg|gif))\|?(?P<metadata>[^]]+)?\]\]"  # group 1 = file_name, group 2 = foramt, group3 = imageText metadata
-    path_patt = r"!\[(?P<metadata>[^]]+)\]\((?P<path>[^)]+\.png|jpg|jpeg|gif\))"  # group 1 = metadata group 2 = file path
+    path_patt = r"!\[(?P<metadata>[^]]+)?\]\((?P<path>[^)]+\.png|jpg|jpeg|gif\))"  # group 1 = metadata group 2 = file path
 
     func_patt_map: List[Tuple[Callable, str]] = [
         (_extract_image_from_no_path_patt, no_path_patt),
@@ -91,8 +94,8 @@ def extract_images_from_md(
             image_infos = _extract_image_by_patt(
                 func_patt_map, name_path_map, line, line_no
             )
-            images = [ImageText(**image_info) for image_info in image_infos]
-            images.extend(images)
+            for image_info in image_infos:
+                images.append(ImageText(**image_info))
 
     return images
 
