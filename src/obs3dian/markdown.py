@@ -2,42 +2,37 @@ import re
 from pathlib import Path
 from dataclasses import dataclass
 import shutil
-from typing import Generator, List, Callable
+from typing import Generator, List, Callable, Tuple
 
 
 @dataclass
 class Image:
     name: str
-    metadata: str | None
-    path: Path | None
+    metadata: str | None = None
+    path: Path | None = None
 
 
-def _match_no_path_patt(patt: str, line: str):
-    if search_result := re.search(patt, line):
-        image_name = search_result.group(1)  # extract abc.png like names
-        metadata = search_result.group(3)
-        image = Image(name=image_name, metadata=metadata, path=None)
-        return image
+def _extract_image_from_no_path_patt(match_result: re.Match) -> Image:
+    image_info = match_result.groupdict()
+    image_name = image_info.get("name")
+    assert image_name, "Image doesn't have path"
+    return Image(**image_info)
 
 
-def _match_path_patt(patt: str, line: str):
-    if match_results := re.finditer(patt, line):
-        images: List[Image] = []
-        for match_result in match_results:
-            if len(match_result.group()) > 1:
-                metadata = match_result.group(1)
-                image_path = match_result.group(2)
-                if image_path[:4] in ("http", "https"):
-                    continue
-                else:
-                    image_path = Path(image_path)
-                    image = Image(
-                        name=image_path.name, metadata=metadata, path=image_path
-                    )
-                    images.append(image)
+def _extrace_image_from_path_patt(match_result: re.Match) -> Image | None:
+    image_info = match_result.groupdict()
+    image_path = image_info.get("path")
+    assert image_path, "Image doesn't have path"
+    if image_path[:4] in ("http", "https"):  # if link is external link
+        return None
 
-            else:
-                return None
+    try:
+        image_info["path"] = Path(image_path)
+        image_info["name"] = image_info["path"].name  # update image name
+        return Image(**image_info)
+
+    except Exception:
+        raise ValueError(f"{image_path} is invalid path")
 
 
 def _get_image_names(markdown_file_path: Path) -> List[str]:
@@ -51,15 +46,22 @@ def _get_image_names(markdown_file_path: Path) -> List[str]:
         List[str]: image names in md file
     """
     image_names = []
-    patt = r"!\[\[([^]]+\.(png|jpg|jpeg|gif))\|?([^]]+)?\]\]"  # group 1 = file_name, group 2 = foramt, group3 = image metadata
-    path_patt = r"!\[([^]]+)\]\(([^)]+\.png|jpg|jpeg|gif\))"  # group 1 = metadata group 2 = file path
+    no_path_patt = r"!\[\[(?P<name>[^]]+\.(png|jpg|jpeg|gif))\|?(?P<metadata>[^]]+)?\]\]"  # group 1 = file_name, group 2 = foramt, group3 = image metadata
+    path_patt = r"!\[(?P<metadata>[^]]+)\]\((?P<path>[^)]+\.png|jpg|jpeg|gif\))"  # group 1 = metadata group 2 = file path
+
+    func_patt_map: List[Tuple[Callable, str]] = [
+        (_extract_image_from_no_path_patt, no_path_patt),
+        (_extrace_image_from_path_patt, path_patt),  # regex patt and match function
+    ]
+    images: List[Image] = []
     with markdown_file_path.open("r") as f:
         while line := f.readline():
-            image_name = _match_no_path_patt(patt, line)
-            if not image_name:
-                image_name = _match_path_patt(path_patt, line)
-            if image_name:
-                image_names.append(image_name)
+            for func, patt in func_patt_map:
+                if match_results := re.finditer(patt, line):
+                    for match_result in match_results:
+                        if image := func(match_result):
+                            images.append(image)
+
     return image_names
 
 
