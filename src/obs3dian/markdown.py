@@ -1,7 +1,43 @@
 import re
 from pathlib import Path
+from dataclasses import dataclass
 import shutil
 from typing import Generator, List, Callable
+
+
+@dataclass
+class Image:
+    name: str
+    metadata: str | None
+    path: Path | None
+
+
+def _match_no_path_patt(patt: str, line: str):
+    if search_result := re.search(patt, line):
+        image_name = search_result.group(1)  # extract abc.png like names
+        metadata = search_result.group(3)
+        image = Image(name=image_name, metadata=metadata, path=None)
+        return image
+
+
+def _match_path_patt(patt: str, line: str):
+    if match_results := re.finditer(patt, line):
+        images: List[Image] = []
+        for match_result in match_results:
+            if len(match_result.group()) > 1:
+                metadata = match_result.group(1)
+                image_path = match_result.group(2)
+                if image_path[:4] in ("http", "https"):
+                    continue
+                else:
+                    image_path = Path(image_path)
+                    image = Image(
+                        name=image_path.name, metadata=metadata, path=image_path
+                    )
+                    images.append(image)
+
+            else:
+                return None
 
 
 def _get_image_names(markdown_file_path: Path) -> List[str]:
@@ -15,13 +51,15 @@ def _get_image_names(markdown_file_path: Path) -> List[str]:
         List[str]: image names in md file
     """
     image_names = []
-    patt = r"!\[\[(.*)\.(png|jpg|jpeg|gif)\|?.*?\]\]"  # group 1 = file_name, group 2 = foramt
+    patt = r"!\[\[([^]]+\.(png|jpg|jpeg|gif))\|?([^]]+)?\]\]"  # group 1 = file_name, group 2 = foramt, group3 = image metadata
+    path_patt = r"!\[([^]]+)\]\(([^)]+\.png|jpg|jpeg|gif\))"  # group 1 = metadata group 2 = file path
     with markdown_file_path.open("r") as f:
         while line := f.readline():
-            if search_results := re.findall(patt, line):
-                for search_result in search_results:
-                    image_name = f"{search_result[0]}.{search_result[1]}"  # extract abc.png like names
-                    image_names.append(image_name)
+            image_name = _match_no_path_patt(patt, line)
+            if not image_name:
+                image_name = _match_path_patt(path_patt, line)
+            if image_name:
+                image_names.append(image_name)
     return image_names
 
 
