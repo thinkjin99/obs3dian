@@ -6,71 +6,75 @@ from typing import Generator, List, Callable, Tuple
 
 
 @dataclass
-class Image:
+class ImageText:
     name: str
+    line: int
+    path: Path
     metadata: str | None = None
-    path: Path | None = None
 
 
-def _extract_image_from_no_path_patt(match_result: re.Match) -> Image:
+def _extract_image_from_no_path_patt(match_result: re.Match) -> dict:
     image_info = match_result.groupdict()
     image_name = image_info.get("name")
-    assert image_name, "Image doesn't have path"
-    return Image(**image_info)
+    assert image_name, "ImageText doesn't have path"
+    return image_info
 
 
-def _extrace_image_from_path_patt(match_result: re.Match) -> Image | None:
+def _extrace_image_from_path_patt(match_result: re.Match) -> dict | None:
     image_info = match_result.groupdict()
     image_path = image_info.get("path")
-    assert image_path, "Image doesn't have path"
+    assert image_path, "ImageText doesn't have path"
     if image_path[:4] in ("http", "https"):  # if link is external link
         return None
 
     try:
-        image_info["path"] = Path(image_path)
-        image_info["name"] = image_info["path"].name  # update image name
-        return Image(**image_info)
+        image_info["name"] = Path(image_path).name  # update imageText name
+        return image_info
 
     except Exception:
         raise ValueError(f"{image_path} is invalid path")
 
 
-def _get_image_names(markdown_file_path: Path) -> List[str]:
+def extract_images_from_md(
+    markdown_file_path: Path, name_path_map: dict[str, Path]
+) -> List[ImageText]:
     """
-    Get image names from .md file
+    Get imageText names from .md file
 
     Args:
         markdown_file_path (Path): md file path
 
     Returns:
-        List[str]: image names in md file
+        List[str]: imageText names in md file
     """
-    image_names = []
-    no_path_patt = r"!\[\[(?P<name>[^]]+\.(png|jpg|jpeg|gif))\|?(?P<metadata>[^]]+)?\]\]"  # group 1 = file_name, group 2 = foramt, group3 = image metadata
+    no_path_patt = r"!\[\[(?P<name>[^]]+\.(png|jpg|jpeg|gif))\|?(?P<metadata>[^]]+)?\]\]"  # group 1 = file_name, group 2 = foramt, group3 = imageText metadata
     path_patt = r"!\[(?P<metadata>[^]]+)\]\((?P<path>[^)]+\.png|jpg|jpeg|gif\))"  # group 1 = metadata group 2 = file path
 
     func_patt_map: List[Tuple[Callable, str]] = [
         (_extract_image_from_no_path_patt, no_path_patt),
-        (_extrace_image_from_path_patt, path_patt),  # regex patt and match function
-    ]
-    images: List[Image] = []
+        (_extrace_image_from_path_patt, path_patt),
+    ]  # regex patt and match function
+
+    images: List[ImageText] = []
     with markdown_file_path.open("r") as f:
-        while line := f.readline():
+        for i, line in enumerate(f):  # read lines
             for func, patt in func_patt_map:
-                if match_results := re.finditer(patt, line):
+                if match_results := re.finditer(patt, line):  # match pattern
                     for match_result in match_results:
-                        if image := func(match_result):
-                            images.append(image)
+                        if image_info := func(match_result):
+                            image_path = Path(name_path_map[image_info["name"]])
+                            images.append(
+                                ImageText(**image_info, path=image_path, line=i)
+                            )  # append imageText data
+    return images
 
-    return image_names
 
-
-def _get_all_images(image_folder_path: Path) -> dict[str, Path]:
+def get_images_name_path_map(image_folder_path: Path) -> dict[str, Path]:
     """
     get all images in folder and create [name, Path] dict of all iamges
 
     Args:
-        image_folder_path (Path): image folder path
+        image_folder_path (Path): imageText folder path
 
     Returns:
         dict[str, Path]: {name, Path}
@@ -82,29 +86,6 @@ def _get_all_images(image_folder_path: Path) -> dict[str, Path]:
         if re.search(patt, file_path.suffix):
             name_path_map[file_path.name] = file_path
     return name_path_map
-
-
-def create_image_path_generator(image_folder_path: Path) -> Callable:
-    name_path_map: dict = _get_all_images(
-        image_folder_path
-    )  # image name, path dict of all images in folder
-
-    def yield_image_path(markdown_file_path: Path) -> Generator[Path, None, None]:
-        """
-        Create Genrator yields image paths in md file
-
-        Args:
-            markdown_file_path:(Path): md file path
-
-        Yields:
-            Generator[Path, None, None]: yield image path generator
-        """
-        image_names: list[str] = _get_image_names(markdown_file_path)
-        for image_name in image_names:
-            if image_name in name_path_map:
-                yield name_path_map[image_name]
-
-    return yield_image_path
 
 
 def _replace_name_to_url(line: str, image_name: str, s3_url: str):
@@ -127,7 +108,7 @@ def write_md_file(
 ):
     """
     Write new .md that replace local file link to S3 url.
-    Only replace image file link and other things are same
+    Only replace imageText file link and other things are same
     Args:
         markdown_file_path (Path): md file path
         output_folder_path (Path): output file path

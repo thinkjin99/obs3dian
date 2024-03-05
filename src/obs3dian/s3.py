@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from urllib import parse
 
+from .markdown import ImageText
+
 
 class S3:
     """
@@ -109,16 +111,16 @@ class S3:
         s3_url = f"https://{self.bucket_name}.s3.{region}.amazonaws.com/{parse.quote(key)}"  # image uploaded url
         return s3_url
 
-    def put_image(self, markdown_path: Path, image_path: Path) -> Path:
+    def put_image(self, markdown_path: Path, image: ImageText) -> ImageText:
         try:
             self.s3.put_object(
                 Bucket=self.bucket_name,
-                Body=image_path.open("rb"),
-                Key=f"{markdown_path.stem} / {image_path.name}",
-                ContentType=f"image/{image_path.suffix}",
+                Body=image.path.open("rb"),
+                Key=f"{markdown_path.stem} / {image.name}",
+                ContentType=f"image/{image.path.suffix}",
             )  # upload image
-            return image_path
+            return image
 
         except ClientError as e:
-            print(f"Error Occured in uploading {image_path}")
+            print(f"Error Occured in uploading {image.path}")
             raise e
