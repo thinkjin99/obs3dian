@@ -2,6 +2,25 @@
 Easy image controller for obsidian. Change internal file links to external S3 links.
 Obs3dian converts local image file path to external url by uploading file in S3.
 
+obs3dian converts image link text to external link.
+
+`![](./test.png)`
+
+will change to
+
+`![](https://YOUR_BUCKET.s3.YOUR_REGION.amazonaws.com/test.png)`
+
+obs3dian allows alt option or size options like
+
+`![[test.jpeg|500]]`
+
+`![this is caption](test.gif)`
+
+and it also can converts image links used in obsidain
+
+`![[test.jpg|500]]`
+
+
 ## Installation
 
 <div class="termy">
