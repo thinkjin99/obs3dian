@@ -16,26 +16,22 @@ class S3:
 
     def __init__(
         self,
-        profile_name: str,
         bucket_name: str,
-        aws_access_key: str,
-        aws_secret_key: str,
-        usekey: bool,
+        profile_name: str | None = None,
+        aws_access_key: str | None = None,
+        aws_secret_key: str | None = None,
     ) -> None:
 
-        if usekey:
-            assert (
-                aws_access_key and aws_secret_key
-            ), "AWS Key error"  # if user has cli profile
+        if profile_name:
+            self.session = boto3.Session(profile_name=profile_name)
+        elif aws_access_key and aws_secret_key:
             self.session = boto3.Session(
                 aws_access_key_id=aws_access_key,
                 aws_secret_access_key=aws_secret_key,
                 region_name="ap-northeast-2",
             )
-
         else:
-            assert profile_name, "AWS profile is required"
-            self.session = boto3.Session(profile_name=profile_name)
+            raise ValueError("Need profile name or Access Key & Secret Key")
 
         self.s3 = self.session.client("s3")
         self.bucket_name = bucket_name
