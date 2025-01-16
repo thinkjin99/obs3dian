@@ -221,7 +221,7 @@ def run(
         profile_name=profile_name,
         aws_access_key=aws_access_key,
         aws_secret_key=aws_secret_key,
-        bucket_name=configs.bucket_name,
+        bucket_name=bucket_name,
     )
 
     runner = create_obs3dian_runner(
