@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "obs3dian"
-version = "0.3.3"
+version = "0.3.4"
 description = "Easy image controller for obsidian. Change internal file links to externa"
 authors = ["정명진 <thinkjin99@gmail.com>"]
 readme = "README.md"
@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 boto3 = "^1.34.48"
-typer = {extras = ["all"], version = "^0.9.0"}
+typer = {extras = ["all"], version = "0.9.0"}
 
 [tool.poetry.scripts]
 obs3dian = "obs3dian.main:app"

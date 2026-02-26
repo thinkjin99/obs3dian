@@ -34,6 +34,7 @@ def load_configs() -> Configuration:
 
     except FileNotFoundError as e:
         print("Config file is not founded... input your configuration\n")
+        raise e
 
 
 def save_config(json_data: dict):
