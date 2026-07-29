@@ -1,9 +1,9 @@
 import concurrent.futures as concurrent_futures
+import getpass
 from threading import Event, Thread
 
 import typer
-from typing_extensions import Annotated
-from typing import Optional
+from typing import Annotated, Optional
 
 from pathlib import Path
 import time
@@ -41,7 +41,7 @@ def set_output_folder(output_folder_path: str):
     output_folder_path_ = _convert_path_absoulte(Path(output_folder_path), strict=False)
     if not output_folder_path_.exists():
         try:
-            output_folder_path_.mkdir()
+            output_folder_path_.mkdir(parents=True)
             print(f"Create Output Folder in {output_folder_path_.name}")
             return True
 
@@ -76,12 +76,14 @@ def set_bucket(
             aws_access_key=aws_access_key,
             aws_secret_key=aws_secret_key,
         )
+    else:
+        raise ValueError("Need profile name or Access Key & Secret Key")
 
     if s3.create_bucket():
         print(f"Bucket {bucket_name} created")
         print("Bucket has public read access so anyone can see files in your bucket")
     else:
-        print(f"Bucket {bucket_name} is already exists try with other name")
+        print(f"Bucket {bucket_name} already exists")
 
 
 @app.command()
@@ -122,10 +124,19 @@ def config(
     typer.echo("AWS-CLI profile name or AWS key is required")
     if input("Do you want to config AWS-CLI profile name? (Y/N): ") in ["y", "Y"]:
         profile_name = default_input("AWS CLI Profile Name", profile_name)
+        aws_access_key = ""
+        aws_secret_key = ""
 
     else:
-        aws_access_key = default_input("AWS AccessKey", aws_access_key)
-        aws_secret_key = default_input("AWS Secret Key", aws_secret_key)
+        profile_name = ""
+        aws_access_key = (
+            input("AWS Access Key [leave blank to keep existing]: ").strip()
+            or aws_access_key
+        )
+        aws_secret_key = (
+            getpass.getpass("AWS Secret Key [leave blank to keep existing]: ").strip()
+            or aws_secret_key
+        )
         if not (aws_access_key and aws_secret_key):
             raise ValueError("You must provide both access and secret key")
 
@@ -159,11 +170,11 @@ def _render_animation(echo_text: str, event: Event) -> None:
     """
     i = 0
     animation = ["|", "/", "--", "\\"]
-    while True:  # run until uploading is done
+    while not event.is_set():  # run until uploading is done
         typer.echo(
             f"\r{animation[i % len(animation)]:<2} {echo_text[:20]:<20}", nl=False
         )  # render animation like => | abc.md -> / abc.md -> -- abc.md
-        time.sleep(0.2)  # give delay to show animation
+        event.wait(0.2)  # give delay to show animation
         i += 1
     return
 
@@ -207,16 +218,24 @@ def run(
 
     configs: Configuration = load_configs()
     bucket_name = bucket_name or configs.bucket_name
-    if output_folder_path:
-        set_output_folder(output_folder_path)
-    if bucket_name:
-        set_bucket(bucket_name, profile_name, aws_access_key, aws_secret_key)
-    typer.echo("")  # new line
-
-    absolute_md_file_path = _convert_path_absoulte(md_file_path)
+    profile_name = profile_name or configs.profile_name or None
+    aws_access_key = aws_access_key or configs.aws_access_key or None
+    aws_secret_key = aws_secret_key or configs.aws_secret_key or None
     output_folder_path = output_folder_path or configs.output_folder_path
     image_folder_path = image_folder_path or configs.image_folder_path
 
+    set_output_folder(output_folder_path)
+
+    if bucket_name:
+        set_bucket(
+            bucket_name,
+            profile_name,
+            aws_access_key,
+            aws_secret_key,
+        )
+    typer.echo("")  # new line
+
+    absolute_md_file_path = _convert_path_absoulte(md_file_path)
     s3 = S3(
         profile_name=profile_name,
         aws_access_key=aws_access_key,
@@ -230,10 +249,10 @@ def run(
 
     if absolute_md_file_path.is_dir():
         markdown_file_paths = [
-            markdown_path for markdown_path in md_file_path.rglob("**/*.md")
+            markdown_path for markdown_path in absolute_md_file_path.rglob("*.md")
         ]  # get all .md file under input dir
     else:
-        markdown_file_paths = [md_file_path]
+        markdown_file_paths = [absolute_md_file_path]
 
     assert len(
         markdown_file_paths
@@ -243,24 +262,27 @@ def run(
         target=_render_animation, args=("Processing files...", event), daemon=True
     )
 
-    with concurrent_futures.ThreadPoolExecutor(
-        max_workers=8
-    ) as executor:  # thread for aniamtion
-        futures = {
-            executor.submit(runner, markdown_file_path): markdown_file_path
-            for markdown_file_path in markdown_file_paths
-        }
-        typer.echo("")  # new line
-        animation_thread.start()  # start loading animaton thread
+    try:
+        with concurrent_futures.ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(runner, markdown_file_path): markdown_file_path
+                for markdown_file_path in markdown_file_paths
+            }
+            typer.echo("")  # new line
+            animation_thread.start()
 
-        with typer.progressbar(
-            label="Processing", iterable=futures.items(), show_eta=False
-        ) as progeress:  # typer progress bar
-            for future, markdown_file_path in progeress:
-                # print progress bar
-                typer.echo("")  # new line
-                future.result()  # check future result
-                typer.echo(f"\rFinished    [{markdown_file_path.name}]")
+            with typer.progressbar(
+                label="Processing", iterable=concurrent_futures.as_completed(futures), show_eta=False
+            ) as progeress:
+                for future in progeress:
+                    markdown_file_path = futures[future]
+                    typer.echo("")  # new line
+                    future.result()
+                    typer.echo(f"\rFinished    [{markdown_file_path.name}]")
+    finally:
+        event.set()
+        if animation_thread.is_alive():
+            animation_thread.join(timeout=1)
 
     typer.echo("\n")  # new line after progress bar
     typer.echo(

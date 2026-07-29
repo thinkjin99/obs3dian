@@ -31,7 +31,7 @@ $ pip install obs3dian
 </div>
 
 ## Requirements
-* python > 3.10
+* Python >= 3.10
 * AWS accounts with permissions to
   * create bucket
   * put image
@@ -52,18 +52,6 @@ Output Path [your ouput path]:
 Image Folder Path [your local image folder path]:
 
 ```
-</div>
-
-<div class="termy">
-
-```console
-$ obs3dian apply
-
-Connected to AWS S3
-Bucket obs3dian is created
-Create Output Folder in ./ouput
-```
-
 </div>
 
 <div class="termy">
@@ -93,10 +81,12 @@ Total converts: 23 obs3dian is successfully finished
 
 </div>
 
-`run` command got options 
+`run` command options
 
 * `--overwrite` will overwrites all markdown files and not create output files under output folder.
-* `--usekey` forces obs3dian to use access key when connects to S3. In default obs3dian using CLI profile in connection.
+* `--profile-name` selects an AWS CLI profile for the S3 connection.
+* `--output-folder-path` selects where converted Markdown files are written.
+* `--image-folder-path` selects where local images are discovered.
 
 
 You can get more info by --help option
@@ -106,7 +96,6 @@ You can get more info by --help option
 ```console
 $ obs3dian --help
 $ obs3dian run --help
-$ obs3dian apply --help
 ```
 
 </div>
@@ -126,6 +115,6 @@ $ obs3dian apply --help
 * `obs3dian` converts all *.md files under input path.
   * If given path is dir then dir/*.md, dir/subdir/*.md is all converted.
 * Created Bucket is public read.
-* `run` command automatically executes apply before run
-* `obs3dian` uses AWS CLI profile first. If you want to use access key pleas give `--usekey` when run.
-* obs3dian only supports `.png, .jpg, .jpeg, .gif` type images.
+* `run` checks or creates the configured bucket before uploading images.
+* `obs3dian` uses the configured AWS CLI profile first and also supports explicit access-key options.
+* obs3dian supports `.png, .jpg, .jpeg, .gif, .webp` image types.

@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 import json
+import mimetypes
 from pathlib import Path
 from urllib import parse
 
@@ -102,19 +103,21 @@ class S3:
             raise e
 
     def _get_image_url(self, markdown_path: Path, image_path: Path) -> str:
-        region = self.session.region_name
-        key = f"{markdown_path.stem} / {image_path.name}"
+        region = self.s3.meta.region_name or self.session.region_name or "us-east-1"
+        key = f"{markdown_path.stem}/{image_path.name}"
         s3_url = f"https://{self.bucket_name}.s3.{region}.amazonaws.com/{parse.quote(key)}"  # image uploaded url
         return s3_url
 
     def put_image(self, markdown_path: Path, image: ImageText) -> ImageText:
         try:
-            self.s3.put_object(
-                Bucket=self.bucket_name,
-                Body=image.path.open("rb"),
-                Key=f"{markdown_path.stem} / {image.name}",
-                ContentType=f"image/{image.path.suffix}",
-            )  # upload image
+            content_type = mimetypes.guess_type(image.path.name)[0] or "application/octet-stream"
+            with image.path.open("rb") as body:
+                self.s3.put_object(
+                    Bucket=self.bucket_name,
+                    Body=body,
+                    Key=f"{markdown_path.stem}/{image.name}",
+                    ContentType=content_type,
+                )  # upload image
             s3_url = self._get_image_url(markdown_path, image.path)
             image.s3_url = s3_url
             return image
